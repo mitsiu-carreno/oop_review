@@ -27,7 +27,7 @@ int main(){
 
   struct sockaddr_in server_socket_address; // Defined in /usr/include/netinet/in.h
   server_socket_address.sin_family = AF_INET;
-  server_socket_address.sin_port = htons(8888);
+  server_socket_address.sin_port = htons(8080);
   //server_socket_address.sin_addr = 
 
   try{
@@ -50,7 +50,7 @@ int main(){
   }
 
   //sleep(30);
-  char message_to_send [4094] = "GET / HTTP/1.1\r\n\r\n\0";
+  char message_to_send [4094] = "Huge message end";
   int message_size = strlen(message_to_send);  // Each char is a byte
 
   //write(sock_fd, message_to_send, message_size);
