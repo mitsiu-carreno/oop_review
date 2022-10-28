@@ -55,7 +55,7 @@ int CreateConnection(int socket_fd, struct sockaddr_in &client_sockaddr, socklen
   return accept_result;
 }
 
-bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_signal, const int end_signal_size, struct sockaddr_in &client_sockaddr, socklen_t &client_sockaddr_len){
+bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_signal, const int end_signal_size, struct sockaddr_in *client_sockaddr, socklen_t *client_sockaddr_len){
   int buffer_size = 4094;
   char in_buffer [buffer_size];
   memset(in_buffer, 0, buffer_size);
@@ -64,7 +64,7 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
 
   int current_bytes_in = 0;
   while(true){
-    int bytes_in = recvfrom(conn_fd, &in_buffer[current_bytes_in], total_bytes_in - current_bytes_in, 0, reinterpret_cast<sockaddr*>(&client_sockaddr), &client_sockaddr_len);
+    int bytes_in = recvfrom(conn_fd, &in_buffer[current_bytes_in], total_bytes_in - current_bytes_in, 0, reinterpret_cast<sockaddr*>(client_sockaddr), client_sockaddr_len);
     if(bytes_in == 0){
       std::cout << "Connection ended while listening, partial message was: " << in_buffer;
       return false;
@@ -73,6 +73,10 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
     }
     current_bytes_in += bytes_in;
 
+      char client_addr [100];
+      inet_ntop(AF_INET, &client_sockaddr, client_addr, 100);
+
+      std::cout << client_addr << "\n";
     if(param_bytes_in > 0){
       // END BY MSG WIDTH
       if(current_bytes_in >= total_bytes_in){
@@ -97,12 +101,18 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
   return true;
 }
 
-void SendMessage(const int conn_fd, const int bytes_out, sockaddr_in client_sockaddr, socklen_t client_sockaddr_len){
-  char out_buffer [] = "Felicitaciones has aprobado la evaluación\n\0"; 
+void SendMessage(const int conn_fd, const int param_bytes_out, sockaddr_in *client_sockaddr, socklen_t client_sockaddr_len){
+  char out_buffer [param_bytes_out] = "Felicitaciones has aprobado la evaluación"; 
+  memset(out_buffer, 97, param_bytes_out);
+  //strcpy(out_buffer, "Felicidades has aprovado la evaluación");
+
+
 
   int current_bytes_out = 0;
   while(true){
-    int bytes_out = sendto(conn_fd, &out_buffer[current_bytes_out], strlen(out_buffer) - current_bytes_out, 0, reinterpret_cast<sockaddr*>(&client_sockaddr), client_sockaddr_len);
+    int bytes_out = sendto(conn_fd, &out_buffer[current_bytes_out], strlen(out_buffer) - current_bytes_out, 0, reinterpret_cast<const struct sockaddr*>(client_sockaddr), client_sockaddr_len);
+                    //sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+
     if(bytes_out == -1){
       throw ErrorLog {"Send Message\0", errno};
     }
@@ -179,16 +189,17 @@ int main(int argc, char **argv){
 
     struct sockaddr_in client_sockaddr;
     socklen_t client_sockaddr_len;
+    memset(&client_sockaddr, 0, sizeof(client_sockaddr));
 
     bool loop = true;
     while(loop){
       if(is_tcp){
         conn_fd = CreateConnection(socket_fd, client_sockaddr, client_sockaddr_len);
       }
-      loop = !RecvMessage(conn_fd, bytes_in, end_signal, strlen(end_signal), client_sockaddr, client_sockaddr_len);
+      loop = !RecvMessage(conn_fd, bytes_in, end_signal, strlen(end_signal), &client_sockaddr, &client_sockaddr_len);
     }
 
-    SendMessage(conn_fd, bytes_out, client_sockaddr, client_sockaddr_len);
+    SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
 
     if(is_tcp){
       close(conn_fd);
