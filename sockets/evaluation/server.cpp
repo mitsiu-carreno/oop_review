@@ -39,15 +39,14 @@ void AssociateSockAddrToSock(int socket_fd, int port){
   }
 }
 
-int CreateConnection(int socket_fd, int port){
+void StartListeningConnections(int socket_fd, int port){
   int listen_result = listen(socket_fd, 20);
   if(listen_result == -1){
     throw ErrorLog {"Listen socket\0", errno};
   }
-  std::cout << "Listening TCP connections on port " << port << "\n";
+}
 
-  struct sockaddr_in client_sockaddr;
-  socklen_t client_sockaddr_len;
+int CreateConnection(int socket_fd, struct sockaddr_in &client_sockaddr, socklen_t &client_sockaddr_len){
   int accept_result = accept(socket_fd, reinterpret_cast<sockaddr*>(&client_sockaddr), &client_sockaddr_len);
   if(accept_result == -1){
     throw ErrorLog {"Accept socket\0", errno};
@@ -62,14 +61,11 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
   memset(in_buffer, 0, buffer_size);
 
   int total_bytes_in = param_bytes_in != 0 ? param_bytes_in : buffer_size -1;
-  //struct sockaddr_in client_sockaddr;
-  //socklen_t client_sockaddr_len;
 
   int current_bytes_in = 0;
   while(true){
     int bytes_in = recvfrom(conn_fd, &in_buffer[current_bytes_in], total_bytes_in - current_bytes_in, 0, reinterpret_cast<sockaddr*>(&client_sockaddr), &client_sockaddr_len);
     if(bytes_in == 0){
-      // TODO handle this
       std::cout << "Connection ended while listening, partial message was: " << in_buffer;
       return false;
     }else if(bytes_in == -1){
@@ -85,12 +81,12 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
     }else{
       // END BY end_signal
       int last_meaningful_byte = current_bytes_in;
-      for(; last_meaningful_byte > 3; --last_meaningful_byte){
+      for(; last_meaningful_byte > end_signal_size; --last_meaningful_byte){
         if(strncmp(&in_buffer[last_meaningful_byte], "\0", 1) != 0){
           break;
         }
       }
-      if(strncmp(&in_buffer[last_meaningful_byte - 3], end_signal, 3) == 0){
+      if(strncmp(&in_buffer[last_meaningful_byte - end_signal_size], end_signal, end_signal_size) == 0){
         break;
       }
     }
@@ -99,6 +95,22 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
   std::cout << in_buffer << "\n";
   // TODO search in db
   return true;
+}
+
+void SendMessage(const int conn_fd, const int bytes_out, sockaddr_in client_sockaddr, socklen_t client_sockaddr_len){
+  char out_buffer [] = "Felicitaciones has aprobado la evaluación\n\0"; 
+
+  int current_bytes_out = 0;
+  while(true){
+    int bytes_out = sendto(conn_fd, &out_buffer[current_bytes_out], strlen(out_buffer) - current_bytes_out, 0, reinterpret_cast<sockaddr*>(&client_sockaddr), client_sockaddr_len);
+    if(bytes_out == -1){
+      throw ErrorLog {"Send Message\0", errno};
+    }
+    current_bytes_out += bytes_out;
+    if(current_bytes_out == strlen(out_buffer)){
+      return;
+    }
+  }
 }
 
 int main(int argc, char **argv){
@@ -157,21 +169,30 @@ int main(int argc, char **argv){
 
     AssociateSockAddrToSock(socket_fd, port);
 
-    int conn_fd;
     if(is_tcp){
-      conn_fd = CreateConnection(socket_fd, port);
-    }else{
-      conn_fd = socket_fd;
+      StartListeningConnections(socket_fd, port);
     }
+
+    std::cout << "Listening " << (is_tcp ? "TCP" : "UDP") << " connections on port " << port << "\n";
+
+    int conn_fd = socket_fd;
 
     struct sockaddr_in client_sockaddr;
     socklen_t client_sockaddr_len;
 
     bool loop = true;
     while(loop){
+      if(is_tcp){
+        conn_fd = CreateConnection(socket_fd, client_sockaddr, client_sockaddr_len);
+      }
       loop = !RecvMessage(conn_fd, bytes_in, end_signal, strlen(end_signal), client_sockaddr, client_sockaddr_len);
     }
 
+    SendMessage(conn_fd, bytes_out, client_sockaddr, client_sockaddr_len);
+
+    if(is_tcp){
+      close(conn_fd);
+    }
     close(socket_fd);
 
   }catch(ErrorLog err_log){
