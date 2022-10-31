@@ -33,7 +33,7 @@ void GetEnv(const char *env_key, std::string &env_value){
   }
 }
 
-void PostgresConnection(){
+pqxx::connection PostgresConnection(){
     std::string db_name;
     std::string db_user;
     std::string db_pass;
@@ -54,7 +54,8 @@ void PostgresConnection(){
       throw ErrorLog {"Can't open database\0", -1};
     }
 
-    C.disconnect();
+    //C.disconnect();
+    return C;
 }
 
 int CreateSocket(bool is_tcp){
@@ -178,7 +179,7 @@ int main(int argc, char **argv){
   bool is_tcp;
   try{
     
-    PostgresConnection();
+    pqxx::connection C = PostgresConnection();
 
     std::string proto = argv[1];
     if(proto == "TCP\0" || proto == "tcp\0"){
@@ -247,6 +248,8 @@ int main(int argc, char **argv){
       close(conn_fd);
     }
     close(socket_fd);
+
+    C.disconnect();
 
   }catch(ErrorLog err_log){
     DisplayError(err_log);
