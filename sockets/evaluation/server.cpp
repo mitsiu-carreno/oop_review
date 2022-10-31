@@ -1,10 +1,12 @@
 #include <iostream>
-#include <stdlib.h>   // atoi
+#include <stdlib.h>   // atoi   getenv
 #include <string.h>   // memset   strncpy   strerror
 #include <errno.h>
 #include <sys/socket.h>   // socket   bind  listen  accept
 #include <arpa/inet.h>    // htonl htons
 #include <unistd.h>   // close
+#include <algorithm>
+#include <pqxx/pqxx>  // postgres connection
 
 const int err_func_name_len = 30;
 
@@ -15,6 +17,44 @@ struct ErrorLog{
 
 void DisplayError(ErrorLog err_log){
   std::cout << "Error in " << err_log.func_name_ << ": " << strerror(err_log.error_code_) << "\n";
+}
+
+void GetEnv(const char *env_key, std::string &env_value){
+  const char *tmp_env = getenv(env_key);
+  env_value = (tmp_env ? tmp_env : "");
+  if(env_value.empty()){
+    std::cout << env_key << " not found\n";
+    throw ErrorLog {"Loading env\0", -1};
+  }
+  // SANITIZATION
+  int pos = env_value.find(' ');
+  if(pos != std::string::npos){
+    env_value = env_value.substr(0, pos);
+  }
+}
+
+void PostgresConnection(){
+    std::string db_name;
+    std::string db_user;
+    std::string db_pass;
+    std::string db_host;
+    std::string db_port;
+
+    GetEnv("DB_NAME", db_name);
+    GetEnv("DB_USER", db_user);
+    GetEnv("DB_PASS", db_pass);
+    GetEnv("DB_HOST", db_host);
+    GetEnv("DB_PORT", db_port);
+
+    std::string connection_string = "dbname = " + db_name + " user = " + db_user + " password = " + db_pass + " hostaddr = " + db_host + " port = " + db_port;
+    pqxx::connection C(connection_string);
+    if(C.is_open()){
+      std::cout << "Opened database successfully: " << C.dbname() << "\n";
+    }else{
+      throw ErrorLog {"Can't open database\0", -1};
+    }
+
+    C.disconnect();
 }
 
 int CreateSocket(bool is_tcp){
@@ -64,7 +104,7 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
 
   int current_bytes_in = 0;
   while(true){
-    int bytes_in = recvfrom(conn_fd, &in_buffer[current_bytes_in], total_bytes_in - current_bytes_in, 0, reinterpret_cast<sockaddr*>(client_sockaddr), client_sockaddr_len);
+    int bytes_in = recvfrom(conn_fd, &in_buffer[current_bytes_in], total_bytes_in - current_bytes_in - 1, 0, reinterpret_cast<sockaddr*>(client_sockaddr), client_sockaddr_len);
     if(bytes_in == 0){
       std::cout << "Connection ended while listening, partial message was: " << in_buffer;
       return false;
@@ -137,6 +177,8 @@ int main(int argc, char **argv){
   int bytes_out;
   bool is_tcp;
   try{
+    
+    PostgresConnection();
 
     std::string proto = argv[1];
     if(proto == "TCP\0" || proto == "tcp\0"){
@@ -208,6 +250,9 @@ int main(int argc, char **argv){
 
   }catch(ErrorLog err_log){
     DisplayError(err_log);
+    return -1;
+  }catch(const std::exception &e){
+    std::cout << e.what() << "\n";
     return -1;
   }
 
