@@ -113,8 +113,8 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
     }
     current_bytes_in += bytes_in;
 
-      char client_addr [100];
-      inet_ntop(AF_INET, &client_sockaddr, client_addr, 100);
+      char client_addr [INET_ADDRSTRLEN];
+      inet_ntop(AF_INET, &(client_sockaddr->sin_addr), client_addr, INET_ADDRSTRLEN);
 
       std::cout << client_addr << "\n";
     if(param_bytes_in > 0){
