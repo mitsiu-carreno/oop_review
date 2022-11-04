@@ -9,6 +9,7 @@
 #include <pqxx/pqxx>  // postgres connection
 
 const int err_func_name_len = 30;
+const int up_len = 8;
 
 struct ErrorLog{
   char func_name_ [err_func_name_len];
@@ -161,9 +162,13 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
   }
 
   std::cout << in_buffer << "\n";
-  std::string up;
-  up.assign(in_buffer, 8);
-  return SearchUp(postg_conn, up);
+  if(current_bytes_in >= up_len){
+    // CHECK UP 
+    std::string up;
+    up.assign(in_buffer, up_len);
+    return SearchUp(postg_conn, up);
+  }
+  return false;
 }
 
 void SendMessage(const int conn_fd, const int param_bytes_out, sockaddr_in *client_sockaddr, socklen_t client_sockaddr_len){
