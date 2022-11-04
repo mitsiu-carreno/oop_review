@@ -33,7 +33,7 @@ void GetEnv(const char *env_key, std::string &env_value){
   }
 }
 
-pqxx::connection PostgresConnection(){
+pqxx::connection* PostgresConnection(){
     std::string db_name;
     std::string db_user;
     std::string db_pass;
@@ -47,15 +47,38 @@ pqxx::connection PostgresConnection(){
     GetEnv("DB_PORT", db_port);
 
     std::string connection_string = "dbname = " + db_name + " user = " + db_user + " password = " + db_pass + " hostaddr = " + db_host + " port = " + db_port;
-    pqxx::connection C(connection_string);
-    if(C.is_open()){
-      std::cout << "Opened database successfully: " << C.dbname() << "\n";
+    pqxx::connection *postg_conn = new pqxx::connection(connection_string);
+    if(postg_conn->is_open()){
+      std::cout << "Opened database successfully: " << postg_conn->dbname() << "\n";
     }else{
       throw ErrorLog {"Can't open database\0", -1};
     }
 
     //C.disconnect();
-    return C;
+    return postg_conn;
+}
+
+bool SearchUp(pqxx::connection *postg_conn, std::string up){
+  try{
+    std::cout << "Searching for: " << up << "\n";
+      
+    postg_conn->prepare("findUp", "SELECT COUNT(*) FROM up WHERE up = $1");
+
+    pqxx::nontransaction N(*postg_conn);
+
+    pqxx::result R(N.exec_prepared("findUp", up));
+
+    return R.begin()[0].as<bool>(); 
+
+    //for(pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c){
+    //  std::cout << "res = " << c[0].as<int>() << "\n";
+    //}
+
+  }catch(const std::exception &e){
+    std::cout << e.what();
+  }
+
+  return false;
 }
 
 int CreateSocket(bool is_tcp){
@@ -96,7 +119,7 @@ int CreateConnection(int socket_fd, struct sockaddr_in &client_sockaddr, socklen
   return accept_result;
 }
 
-bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_signal, const int end_signal_size, struct sockaddr_in *client_sockaddr, socklen_t *client_sockaddr_len){
+bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_signal, const int end_signal_size, struct sockaddr_in *client_sockaddr, socklen_t *client_sockaddr_len, pqxx::connection *postg_conn){
   int buffer_size = 4094;
   char in_buffer [buffer_size];
   memset(in_buffer, 0, buffer_size);
@@ -138,13 +161,14 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
   }
 
   std::cout << in_buffer << "\n";
-  // TODO search in db
-  return true;
+  std::string up;
+  up.assign(in_buffer, 8);
+  return SearchUp(postg_conn, up);
 }
 
 void SendMessage(const int conn_fd, const int param_bytes_out, sockaddr_in *client_sockaddr, socklen_t client_sockaddr_len){
   char out_buffer [param_bytes_out] = "Felicitaciones has aprobado la evaluación"; 
-  memset(out_buffer, 97, param_bytes_out);
+  //memset(out_buffer, 97, param_bytes_out);
   //strcpy(out_buffer, "Felicidades has aprovado la evaluación");
 
 
@@ -177,9 +201,10 @@ int main(int argc, char **argv){
   char end_signal[end_signal_size];
   int bytes_out;
   bool is_tcp;
+  pqxx::connection *postg_conn;
   try{
     
-    pqxx::connection C = PostgresConnection();
+    postg_conn = PostgresConnection();
 
     std::string proto = argv[1];
     if(proto == "TCP\0" || proto == "tcp\0"){
@@ -239,7 +264,10 @@ int main(int argc, char **argv){
       if(is_tcp){
         conn_fd = CreateConnection(socket_fd, client_sockaddr, client_sockaddr_len);
       }
-      loop = !RecvMessage(conn_fd, bytes_in, end_signal, strlen(end_signal), &client_sockaddr, &client_sockaddr_len);
+      loop = !RecvMessage(conn_fd, bytes_in, end_signal, strlen(end_signal), &client_sockaddr, &client_sockaddr_len, postg_conn);
+      if(loop){
+        std::cout<< "Up not found try again\n";
+      }
     }
 
     SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
@@ -249,7 +277,11 @@ int main(int argc, char **argv){
     }
     close(socket_fd);
 
-    C.disconnect();
+    std::cout << "1\n";
+    postg_conn->disconnect();
+    std::cout << "2\n";
+    delete postg_conn;
+    std::cout << "3\n";
 
   }catch(ErrorLog err_log){
     DisplayError(err_log);
