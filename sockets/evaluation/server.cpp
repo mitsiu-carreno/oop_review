@@ -111,8 +111,8 @@ void StartListeningConnections(int socket_fd, int port){
   }
 }
 
-int CreateConnection(int socket_fd, struct sockaddr_in &client_sockaddr, socklen_t &client_sockaddr_len){
-  int accept_result = accept(socket_fd, reinterpret_cast<sockaddr*>(&client_sockaddr), &client_sockaddr_len);
+int CreateConnection(int socket_fd, struct sockaddr_in *client_sockaddr, socklen_t *client_sockaddr_len){
+  int accept_result = accept(socket_fd, reinterpret_cast<sockaddr*>(client_sockaddr), client_sockaddr_len);
   if(accept_result == -1){
     throw ErrorLog {"Accept socket\0", errno};
   }
@@ -172,17 +172,12 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
 }
 
 void SendMessage(const int conn_fd, const int param_bytes_out, sockaddr_in *client_sockaddr, socklen_t client_sockaddr_len){
-  char out_buffer [param_bytes_out] = "Felicitaciones has aprobado la evaluación"; 
-  //memset(out_buffer, 97, param_bytes_out);
-  //strcpy(out_buffer, "Felicidades has aprovado la evaluación");
-
-
+  std::cout << client_sockaddr_len << "\n";
+  char out_buffer [param_bytes_out] = "Felicidades has aprobado la evaluación";
 
   int current_bytes_out = 0;
   while(true){
-    int bytes_out = sendto(conn_fd, &out_buffer[current_bytes_out], strlen(out_buffer) - current_bytes_out, 0, reinterpret_cast<const struct sockaddr*>(client_sockaddr), client_sockaddr_len);
-                    //sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
-
+    int bytes_out = sendto(conn_fd, &out_buffer[current_bytes_out], strlen(out_buffer) - current_bytes_out, 0, reinterpret_cast<sockaddr*>(client_sockaddr), client_sockaddr_len);
     if(bytes_out == -1){
       throw ErrorLog {"Send Message\0", errno};
     }
@@ -261,16 +256,19 @@ int main(int argc, char **argv){
     int conn_fd = socket_fd;
 
     struct sockaddr_in client_sockaddr;
-    socklen_t client_sockaddr_len;
+    socklen_t client_sockaddr_len = 0;
     memset(&client_sockaddr, 0, sizeof(client_sockaddr));
 
     bool loop = true;
     while(loop){
       if(is_tcp){
-        conn_fd = CreateConnection(socket_fd, client_sockaddr, client_sockaddr_len);
+        conn_fd = CreateConnection(socket_fd, &client_sockaddr, &client_sockaddr_len);
       }
       loop = !RecvMessage(conn_fd, bytes_in, end_signal, strlen(end_signal), &client_sockaddr, &client_sockaddr_len, postg_conn);
       if(loop){
+        if(is_tcp){
+          close(conn_fd);
+        }
         std::cout<< "Up not found try again\n";
       }
     }
@@ -282,11 +280,8 @@ int main(int argc, char **argv){
     }
     close(socket_fd);
 
-    std::cout << "1\n";
     postg_conn->disconnect();
-    std::cout << "2\n";
     delete postg_conn;
-    std::cout << "3\n";
 
   }catch(ErrorLog err_log){
     DisplayError(err_log);
