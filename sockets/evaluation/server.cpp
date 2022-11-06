@@ -5,8 +5,8 @@
 #include <sys/socket.h>   // socket   bind  listen  accept
 #include <arpa/inet.h>    // htonl htons
 #include <unistd.h>   // close
+#include <fstream>    // file writting
 #include <algorithm>
-#include <pqxx/pqxx>  // postgres connection
 
 const int err_func_name_len = 30;
 const int up_len = 8;
@@ -20,66 +20,25 @@ void DisplayError(ErrorLog err_log){
   std::cout << "Error in " << err_log.func_name_ << ": " << strerror(err_log.error_code_) << "\n";
 }
 
-void GetEnv(const char *env_key, std::string &env_value){
-  const char *tmp_env = getenv(env_key);
-  env_value = (tmp_env ? tmp_env : "");
-  if(env_value.empty()){
-    std::cout << env_key << " not found\n";
-    throw ErrorLog {"Loading env\0", -1};
-  }
-  // SANITIZATION
-  int pos = env_value.find(' ');
-  if(pos != std::string::npos){
-    env_value = env_value.substr(0, pos);
-  }
-}
-
-pqxx::connection* PostgresConnection(){
-    std::string db_name;
-    std::string db_user;
-    std::string db_pass;
-    std::string db_host;
-    std::string db_port;
-
-    GetEnv("DB_NAME", db_name);
-    GetEnv("DB_USER", db_user);
-    GetEnv("DB_PASS", db_pass);
-    GetEnv("DB_HOST", db_host);
-    GetEnv("DB_PORT", db_port);
-
-    std::string connection_string = "dbname = " + db_name + " user = " + db_user + " password = " + db_pass + " hostaddr = " + db_host + " port = " + db_port;
-    pqxx::connection *postg_conn = new pqxx::connection(connection_string);
-    if(postg_conn->is_open()){
-      std::cout << "Opened database successfully: " << postg_conn->dbname() << "\n";
-    }else{
-      throw ErrorLog {"Can't open database\0", -1};
+bool SearchUp(std::string new_up){
+  std::vector <std::string> up_list {"UP200994", "UP110105"};
+  bool found = false;
+  for(std::string up : up_list){
+    if(up.find(new_up, 0) != std::string::npos){
+      found = true;
     }
-
-    //C.disconnect();
-    return postg_conn;
+  }
+  return found;
 }
 
-bool SearchUp(pqxx::connection *postg_conn, std::string up){
-  try{
-    std::cout << "Searching for: " << up << "\n";
-      
-    postg_conn->prepare("findUp", "SELECT COUNT(*) FROM up WHERE up = $1");
+void WriteLog(bool is_tcp, const int port, const int bytes_in, const char *end_signal, const int end_signal_size, const int bytes_out, const char *msg, const int msg_size){
+  std::string file_name = is_tcp ? "TCP_" : "UDP_" + std::to_string(port);
 
-    pqxx::nontransaction postg_nont(*postg_conn);
+  std::ofstream write_stream;
+  write_stream.open(file_name);
+  write_stream << bytes_in << "," << end_signal << "," << bytes_out << "," << msg << "\n";
+  write_stream.close();
 
-    pqxx::result postg_res(postg_nont.exec_prepared("findUp", up));
-
-    return postg_res.begin()[0].as<bool>(); 
-
-    //for(pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c){
-    //  std::cout << "res = " << c[0].as<int>() << "\n";
-    //}
-
-  }catch(const std::exception &e){
-    std::cout << e.what();
-  }
-
-  return false;
 }
 
 int CreateSocket(bool is_tcp){
@@ -120,10 +79,10 @@ int CreateConnection(int socket_fd, struct sockaddr_in *client_sockaddr, socklen
   return accept_result;
 }
 
-bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_signal, const int end_signal_size, struct sockaddr_in *client_sockaddr, socklen_t *client_sockaddr_len, pqxx::connection *postg_conn){
-  int buffer_size = 4094;
-  char in_buffer [buffer_size];
-  memset(in_buffer, 0, buffer_size);
+bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, const int param_bytes_in, const char *end_signal, const int end_signal_size, struct sockaddr_in *client_sockaddr, socklen_t *client_sockaddr_len){
+  //int buffer_size = 4094;
+  //char in_buffer [buffer_size];
+  //memset(in_buffer, 0, buffer_size);
 
   int total_bytes_in = param_bytes_in != 0 ? param_bytes_in : buffer_size -1;
 
@@ -166,18 +125,10 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
     // CHECK UP 
     std::string up;
     up.assign(in_buffer, up_len);
-    bool found = SearchUp(postg_conn, up);
-    
-    postg_conn->prepare("new_log", "INSERT INTO logs (up, proto, port, bytes_in, end_signal, bytes_out, msg) VALUES ($1, $2, $3, $4, $5, $6, $7)");
-
-    pqxx::work postg_t(*postg_conn);
-
-    pqxx::result postg_res(postg_t.exec_prepared("new_log", "UP200994", "UDP", 8080, 0, "end", 15, "hola"));
-
-    postg_t.commit();
-
-    return found;
+    return SearchUp(up);
   }
+  
+
   return false;
 }
 
@@ -211,11 +162,8 @@ int main(int argc, char **argv){
   char end_signal[end_signal_size];
   int bytes_out;
   bool is_tcp;
-  pqxx::connection *postg_conn;
   try{
     
-    postg_conn = PostgresConnection();
-
     std::string proto = argv[1];
     if(proto == "TCP\0" || proto == "tcp\0"){
       is_tcp = true;
@@ -269,12 +217,16 @@ int main(int argc, char **argv){
     socklen_t client_sockaddr_len = 0;
     memset(&client_sockaddr, 0, sizeof(client_sockaddr));
 
+    int in_buffer_size = 4094;
+    char in_buffer[in_buffer_size];
+    memset(in_buffer, 0, in_buffer_size);
+
     bool loop = true;
     while(loop){
       if(is_tcp){
         conn_fd = CreateConnection(socket_fd, &client_sockaddr, &client_sockaddr_len);
       }
-      loop = !RecvMessage(conn_fd, bytes_in, end_signal, strlen(end_signal), &client_sockaddr, &client_sockaddr_len, postg_conn);
+      loop = !RecvMessage(conn_fd, in_buffer, in_buffer_size, bytes_in, end_signal, strlen(end_signal), &client_sockaddr, &client_sockaddr_len);
       if(loop){
         if(is_tcp){
           close(conn_fd);
@@ -283,6 +235,8 @@ int main(int argc, char **argv){
       }
     }
 
+    WriteLog(is_tcp, port, bytes_in, end_signal, strlen(end_signal), bytes_out, in_buffer, in_buffer_size);
+
     SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
 
     if(is_tcp){
@@ -290,8 +244,6 @@ int main(int argc, char **argv){
     }
     close(socket_fd);
 
-    postg_conn->disconnect();
-    delete postg_conn;
 
   }catch(ErrorLog err_log){
     DisplayError(err_log);
