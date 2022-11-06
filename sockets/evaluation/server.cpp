@@ -21,18 +21,16 @@ void DisplayError(ErrorLog err_log){
 }
 
 bool SearchUp(std::string new_up){
-  std::vector <std::string> up_list {"UP200994", "UP110105"};
+  std::string up_list = "UP200994 UP110105";
   bool found = false;
-  for(std::string up : up_list){
-    if(up.find(new_up, 0) != std::string::npos){
-      found = true;
-    }
+  if(up_list.find(new_up, 0) != std::string::npos){
+    found = true;
   }
   return found;
 }
 
 void WriteLog(bool is_tcp, const int port, const int bytes_in, const char *end_signal, const int end_signal_size, const int bytes_out, const char *msg, const int msg_size){
-  std::string file_name = is_tcp ? "TCP_" : "UDP_" + std::to_string(port);
+  std::string file_name = is_tcp ? "logs/TCP_" : "logs/UDP_" + std::to_string(port);
 
   std::ofstream write_stream;
   write_stream.open(file_name);
