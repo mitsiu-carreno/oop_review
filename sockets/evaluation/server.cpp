@@ -132,7 +132,9 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
 
 void SendMessage(const int conn_fd, const int param_bytes_out, sockaddr_in *client_sockaddr, socklen_t client_sockaddr_len){
   std::cout << client_sockaddr_len << "\n";
-  char out_buffer [param_bytes_out] = "Felicidades has aprobado la evaluación";
+  char out_buffer[param_bytes_out];
+  memset(out_buffer, 0, param_bytes_out);
+  strncpy(out_buffer, "Felicidades has aprobado la evaluación\0", strlen("Felicidades has aprobado la evaluación\0"));
 
   int current_bytes_out = 0;
   while(true){
