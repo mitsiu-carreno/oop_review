@@ -132,7 +132,7 @@ void func(){
   std::cout << "a\n";
   for(int i=0; i<100; ++i){
     sleep(1);
-    //std::cout << "Concurrent execution of thread in C++ \n";
+    std::cout << "Concurrent execution of thread in C++ \n";
   }
 }
 
@@ -144,7 +144,7 @@ int main(){
   std::cout << "Main function thread executing\n";
   for(int i=0; i<80; ++i){
     sleep(1);
-    //std::cout << "Main " << i << "\n";
+    std::cout << "Main " << i << "\n";
   }
   t1.detach();
   // join make's sure that t1 terminates before main function exits

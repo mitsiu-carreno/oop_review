@@ -31,7 +31,7 @@ int main(){
   //server_socket_address.sin_addr = 
 
   try{
-    if(inet_pton(AF_INET, "127.0.0.1", &server_socket_address.sin_addr) != 1){
+    if(inet_pton(AF_INET, "10.0.0.28", &server_socket_address.sin_addr) != 1){
       throw -1;
     }
   }catch(int error_code){
@@ -50,7 +50,7 @@ int main(){
   }
 
   //sleep(30);
-  char message_to_send [4094] = "Huge message end";
+  char message_to_send [4094] = "Huge message with lots of bytes and will be truncated";
   int message_size = strlen(message_to_send);  // Each char is a byte
 
   //write(sock_fd, message_to_send, message_size);

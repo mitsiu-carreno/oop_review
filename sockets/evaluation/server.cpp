@@ -65,11 +65,11 @@ bool SearchUp(pqxx::connection *postg_conn, std::string up){
       
     postg_conn->prepare("findUp", "SELECT COUNT(*) FROM up WHERE up = $1");
 
-    pqxx::nontransaction N(*postg_conn);
+    pqxx::nontransaction postg_nont(*postg_conn);
 
-    pqxx::result R(N.exec_prepared("findUp", up));
+    pqxx::result postg_res(postg_nont.exec_prepared("findUp", up));
 
-    return R.begin()[0].as<bool>(); 
+    return postg_res.begin()[0].as<bool>(); 
 
     //for(pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c){
     //  std::cout << "res = " << c[0].as<int>() << "\n";
@@ -166,7 +166,17 @@ bool RecvMessage(const int conn_fd, const int param_bytes_in, const char *end_si
     // CHECK UP 
     std::string up;
     up.assign(in_buffer, up_len);
-    return SearchUp(postg_conn, up);
+    bool found = SearchUp(postg_conn, up);
+    
+    postg_conn->prepare("new_log", "INSERT INTO logs (up, proto, port, bytes_in, end_signal, bytes_out, msg) VALUES ($1, $2, $3, $4, $5, $6, $7)");
+
+    pqxx::work postg_t(*postg_conn);
+
+    pqxx::result postg_res(postg_t.exec_prepared("new_log", "UP200994", "UDP", 8080, 0, "end", 15, "hola"));
+
+    postg_t.commit();
+
+    return found;
   }
   return false;
 }
