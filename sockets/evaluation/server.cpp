@@ -22,7 +22,7 @@ void DisplayError(ErrorLog err_log){
 
 bool SearchUp(std::string new_up){
   std::cout << "Searching for " << new_up << "\n";
-  std::string up_list = "UP200994 UP110105";
+  std::string up_list = "UP200231 UP200994 UP200953 UP200667 UP200045 UP200423 UP200920 UP200604 UP200053 UP200738 UP200966 UP200424 UP200512 UP200760 UP200511 UP210934";
   bool found = false;
   if(up_list.find(new_up, 0) != std::string::npos){
     found = true;
