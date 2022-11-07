@@ -118,7 +118,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
       }
     }else{
       // END BY end_signal
-      std::cout << "Check if end by end_signal << "\"" << end_signal <<"\"\n";
+      std::cout << "Check if end by end_signal" << "\"" << end_signal <<"\"\n";
 
       std::string msg;
       msg.assign(in_buffer, total_bytes_in);
