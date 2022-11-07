@@ -107,6 +107,8 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
       inet_ntop(AF_INET, &(client_sockaddr->sin_addr), client_addr, INET_ADDRSTRLEN);
 
       std::cout << "Client ip: " << client_addr << "\n";
+
+      std::cout << "Last message bytes: " << bytes_in << " total message bytes: " << current_bytes_in << "\n";
     if(param_bytes_in > 0){
       // END BY MSG WIDTH
       std::cout << "Check if end by msg width " << current_bytes_in << " vs " << total_bytes_in << "\n";
@@ -120,7 +122,8 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
       std::string msg;
       msg.assign(in_buffer, total_bytes_in);
       if(msg.find(end_signal, 0) != std::string::npos){
-        return true;
+        //return true;
+        break;
       }
       return false;
       /*
