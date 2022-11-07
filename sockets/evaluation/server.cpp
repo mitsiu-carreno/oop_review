@@ -21,6 +21,7 @@ void DisplayError(ErrorLog err_log){
 }
 
 bool SearchUp(std::string new_up){
+  std::cout << "Searching for " << new_up << "\n";
   std::string up_list = "UP200994 UP110105";
   bool found = false;
   if(up_list.find(new_up, 0) != std::string::npos){
@@ -30,6 +31,7 @@ bool SearchUp(std::string new_up){
 }
 
 void WriteLog(bool is_tcp, const int port, const char *client_ip, const int bytes_in, const char *end_signal, const int end_signal_size, const int bytes_out, const char *msg, const int msg_size){
+  std::cout << "Writting log\n";
   static bool flag = true;
   std::string file_name = is_tcp ? "logs/TCP_" : "logs/UDP_" + std::to_string(port);
 
@@ -45,6 +47,7 @@ void WriteLog(bool is_tcp, const int port, const char *client_ip, const int byte
 }
 
 int CreateSocket(bool is_tcp){
+  std::cout << "Creating socket\n";
   int socket_fd = socket(AF_INET, is_tcp ? SOCK_STREAM : SOCK_DGRAM, 0);
   if(socket_fd == -1){  
     throw ErrorLog {"Create Socket", errno};
@@ -53,6 +56,7 @@ int CreateSocket(bool is_tcp){
 }
 
 void AssociateSockAddrToSock(int socket_fd, int port){
+  std::cout << "Binding socket\n";
 
   struct sockaddr_in server_sockaddr;
   server_sockaddr.sin_family = AF_INET;
@@ -67,6 +71,7 @@ void AssociateSockAddrToSock(int socket_fd, int port){
 }
 
 void StartListeningConnections(int socket_fd, int port){
+  std::cout << "Listening\n";
   int listen_result = listen(socket_fd, 20);
   if(listen_result == -1){
     throw ErrorLog {"Listen socket\0", errno};
@@ -74,6 +79,7 @@ void StartListeningConnections(int socket_fd, int port){
 }
 
 int CreateConnection(int socket_fd, struct sockaddr_in *client_sockaddr, socklen_t *client_sockaddr_len){
+  std::cout << "Accept\n";
   int accept_result = accept(socket_fd, reinterpret_cast<sockaddr*>(client_sockaddr), client_sockaddr_len);
   if(accept_result == -1){
     throw ErrorLog {"Accept socket\0", errno};
@@ -83,6 +89,7 @@ int CreateConnection(int socket_fd, struct sockaddr_in *client_sockaddr, socklen
 }
 
 bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, const int param_bytes_in, const char *end_signal, const int end_signal_size, struct sockaddr_in *client_sockaddr, socklen_t *client_sockaddr_len){
+  std::cout << "Ready to receive\n";
   //int buffer_size = 4094;
   //char in_buffer [buffer_size];
   //memset(in_buffer, 0, buffer_size);
@@ -98,32 +105,36 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
     }else if(bytes_in == -1){
       throw ErrorLog {"Recv Message\0", errno};
     }
+    std::cout << "Processing received message\n";
     current_bytes_in += bytes_in;
 
       char client_addr [INET_ADDRSTRLEN];
       inet_ntop(AF_INET, &(client_sockaddr->sin_addr), client_addr, INET_ADDRSTRLEN);
 
-      std::cout << client_addr << "\n";
+      std::cout << "Client ip: " << client_addr << "\n";
     if(param_bytes_in > 0){
       // END BY MSG WIDTH
+      std::cout << "Check if end by msg width\n";
       if(current_bytes_in >= total_bytes_in){
         break;
       }
     }else{
       // END BY end_signal
+      std::cout << "Check if end by end_signal\n";
       int last_meaningful_byte = current_bytes_in;
       for(; last_meaningful_byte > end_signal_size; --last_meaningful_byte){
         if(strncmp(&in_buffer[last_meaningful_byte], "\0", 1) != 0){
           break;
         }
       }
+      std::cout << "Last_meaningful byte: " << last_meaningful_byte << " with char " << in_buffer[last_meaningful_byte] << "\n";
       if(strncmp(&in_buffer[last_meaningful_byte - end_signal_size], end_signal, end_signal_size) == 0){
         break;
       }
     }
   }
 
-  std::cout << in_buffer << "\n";
+  std::cout << "Checked done, msg: " << in_buffer << "\n";
   if(current_bytes_in >= up_len){
     // CHECK UP 
     std::string up;
@@ -136,6 +147,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
 }
 
 void SendMessage(const int conn_fd, const int param_bytes_out, sockaddr_in *client_sockaddr, socklen_t client_sockaddr_len){
+  std::cout << "Ready to send message\n";
   std::cout << client_sockaddr_len << "\n";
   char out_buffer[param_bytes_out];
   memset(out_buffer, 0, param_bytes_out);
