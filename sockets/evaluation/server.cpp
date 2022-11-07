@@ -118,14 +118,16 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
       }
     }else{
       // END BY end_signal
-      std::cout << "Check if end by end_signal\n";
+      std::cout << "Check if end by end_signal << "\"" << end_signal <<"\""\n";
 
       std::string msg;
       msg.assign(in_buffer, total_bytes_in);
-      if(msg.find(end_signal, 0) != std::string::npos){
+      if(msg.find(end_signal) != std::string::npos){
         //return true;
+        std::cout << "Found at pos " << msg.find(end_signal); 
         break;
       }
+      std::cout << "End signal not found\n";
       return false;
       /*
       int last_meaningful_byte = current_bytes_in;
