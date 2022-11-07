@@ -30,18 +30,14 @@ bool SearchUp(std::string new_up){
   return found;
 }
 
-void WriteLog(bool is_tcp, const int port, const char *client_ip, const int bytes_in, const char *end_signal, const int end_signal_size, const int bytes_out, const char *msg, const int msg_size){
+void WriteLog(bool is_tcp, const int port, const char *end_signal,  const char *msg){
   std::cout << "Writting log\n";
   static bool flag = true;
-  std::string file_name = is_tcp ? "logs/TCP_" : "logs/UDP_" + std::to_string(port);
+  std::string file_name = std::to_string("logs/") + up + is_tcp ? "TCP_" : "UDP_" + std::to_string(port);
 
   std::ofstream write_stream;
   write_stream.open(file_name);
-  if(flag){
-    write_stream << "ip,port,bytes_in,end_signal,bytes_out,msg";
-    flag = false;
-  }
-  write_stream << client_ip << "," << bytes_in << "," << end_signal << "," << bytes_out << "," << msg << "\n";
+  write_stream << client_ip << "," << bytes_in << "," << end_signal << "," << msg << "\n";
   write_stream.close();
 
 }
@@ -259,7 +255,6 @@ int main(int argc, char **argv){
 
       inet_ntop(AF_INET, &(client_sockaddr.sin_addr), client_ip, INET_ADDRSTRLEN);
       
-      WriteLog(is_tcp, port, client_ip, bytes_in, end_signal, strlen(end_signal), bytes_out, in_buffer, in_buffer_size);
 
       if(loop){
         if(is_tcp){
@@ -270,6 +265,7 @@ int main(int argc, char **argv){
     }
 
 
+    WriteLog(is_tcp, port, client_ip, bytes_in, end_signal, strlen(end_signal), bytes_out, in_buffer, in_buffer_size);
     //SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
 
     if(is_tcp){
