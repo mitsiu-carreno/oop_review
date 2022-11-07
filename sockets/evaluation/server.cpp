@@ -90,9 +90,6 @@ int CreateConnection(int socket_fd, struct sockaddr_in *client_sockaddr, socklen
 
 bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, const int param_bytes_in, const char *end_signal, const int end_signal_size, struct sockaddr_in *client_sockaddr, socklen_t *client_sockaddr_len){
   std::cout << "Ready to receive\n";
-  //int buffer_size = 4094;
-  //char in_buffer [buffer_size];
-  //memset(in_buffer, 0, buffer_size);
 
   int total_bytes_in = param_bytes_in != 0 ? param_bytes_in : buffer_size -1;
 
@@ -206,6 +203,7 @@ int main(int argc, char **argv){
         throw ErrorLog {"End signal is too long", -1};
       }
       strcpy(end_signal, argv[4]);
+      std::cout << "-"<<end_signal<<"-" strlen(end_signal);
       if(end_signal[0] == '0'){
         throw ErrorLog {"No bytes_in nor end_signal", -1};
       }
@@ -263,7 +261,7 @@ int main(int argc, char **argv){
     }
 
 
-    SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
+    //SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
 
     if(is_tcp){
       close(conn_fd);
