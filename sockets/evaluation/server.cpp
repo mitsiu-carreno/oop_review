@@ -33,7 +33,7 @@ bool SearchUp(std::string new_up){
 void WriteLog(std::string up, bool is_tcp, const int port, const char *client_ip, const int bytes_in, const char *end_signal,  const char *msg){
   std::cout << "Writting log\n";
   std::string folder = "logs/";
-  std::string proto = is_tcp ? "TCP_" : "UDP_";
+  std::string proto = is_tcp ? "_TCP_" : "_UDP_";
   static bool flag = true;
   std::string file_name = folder + up + proto + std::to_string(port);
 
