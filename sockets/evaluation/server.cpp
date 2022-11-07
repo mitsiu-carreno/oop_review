@@ -30,7 +30,7 @@ bool SearchUp(std::string new_up){
   return found;
 }
 
-void WriteLog(bool is_tcp, const int port, const char *end_signal,  const char *msg){
+void WriteLog(std::string up, bool is_tcp, const int port, const char *client_ip, const char *end_signal,  const char *msg){
   std::cout << "Writting log\n";
   static bool flag = true;
   std::string file_name = "logs/" + up + is_tcp ? "TCP_" : "UDP_" + std::to_string(port);
@@ -263,9 +263,10 @@ int main(int argc, char **argv){
         std::cout<< "Up not found try again\n";
       }
     }
+    std::string up;
+    up.assign(in_buffer, up_len);
 
-
-    WriteLog(is_tcp, port, client_ip, bytes_in, end_signal, strlen(end_signal), bytes_out, in_buffer, in_buffer_size);
+    WriteLog(up, is_tcp, port, client_ip, end_signal, in_buffer);
     //SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
 
     if(is_tcp){
