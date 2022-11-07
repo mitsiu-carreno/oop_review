@@ -95,7 +95,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
 
   int current_bytes_in = 0;
   while(true){
-    int bytes_in = recvfrom(conn_fd, &in_buffer[current_bytes_in], total_bytes_in - current_bytes_in - 1, 0, reinterpret_cast<sockaddr*>(client_sockaddr), client_sockaddr_len);
+    int bytes_in = recvfrom(conn_fd, &in_buffer[current_bytes_in], total_bytes_in - current_bytes_in, 0, reinterpret_cast<sockaddr*>(client_sockaddr), client_sockaddr_len);
     if(bytes_in == 0){
       std::cout << "Connection ended while listening, partial message was: " << in_buffer;
       return false;
