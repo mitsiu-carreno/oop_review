@@ -233,7 +233,7 @@ int main(int argc, char **argv){
       StartListeningConnections(socket_fd, port);
     }
 
-    std::cout << "Listening " << (is_tcp ? "TCP" : "UDP") << " connections on port " << port << " waiting " << bytes_in == 0 ? end_signal : bytes_in << "\n";
+    std::cout << "Listening " << (is_tcp ? "TCP" : "UDP") << " connections on port " << port << " waiting " << bytes_in << " bytes or end_signal: " <<  end_signal << "\n";
 
     int conn_fd = socket_fd;
 
