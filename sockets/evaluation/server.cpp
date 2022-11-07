@@ -109,7 +109,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
       std::cout << "Client ip: " << client_addr << "\n";
 
       std::cout << "Last message bytes: " << bytes_in << " total message bytes: " << current_bytes_in << "\n";
-      std::cout << ""
+      std::cout << "Current msg: " << in_buffer << "\n";
     if(param_bytes_in > 0){
       // END BY MSG WIDTH
       std::cout << "Check if end by msg width " << current_bytes_in << " vs " << total_bytes_in << "\n";
