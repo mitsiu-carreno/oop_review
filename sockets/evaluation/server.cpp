@@ -30,7 +30,7 @@ bool SearchUp(std::string new_up){
   return found;
 }
 
-void WriteLog(std::string up, bool is_tcp, const int port, const char *client_ip, const char *end_signal,  const char *msg){
+void WriteLog(std::string up, bool is_tcp, const int port, const char *client_ip, const int bytes_in, const char *end_signal,  const char *msg){
   std::cout << "Writting log\n";
   std::string folder = "logs/";
   static bool flag = true;
@@ -267,7 +267,7 @@ int main(int argc, char **argv){
     std::string up;
     up.assign(in_buffer, up_len);
 
-    WriteLog(up, is_tcp, port, client_ip, end_signal, in_buffer);
+    WriteLog(up, is_tcp, port, client_ip, bytes_in, end_signal, in_buffer);
     //SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
 
     if(is_tcp){
