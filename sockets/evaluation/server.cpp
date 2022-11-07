@@ -268,7 +268,7 @@ int main(int argc, char **argv){
         if(is_tcp){
           close(conn_fd);
         }
-        std::cout<< "Up not found try again\n";
+        std::cout<< "Up not found or msg incomplete, send other packet or reconnect\n";
       }
     }
     //up.assign(in_buffer, up_len);
