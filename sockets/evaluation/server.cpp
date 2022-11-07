@@ -30,7 +30,7 @@ bool SearchUp(std::string new_up){
 }
 
 void WriteLog(bool is_tcp, const int port, const char *client_ip, const int bytes_in, const char *end_signal, const int end_signal_size, const int bytes_out, const char *msg, const int msg_size){
-  static flag = true;
+  static bool flag = true;
   std::string file_name = is_tcp ? "logs/TCP_" : "logs/UDP_" + std::to_string(port);
 
   std::ofstream write_stream;
