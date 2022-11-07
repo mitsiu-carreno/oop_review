@@ -29,12 +29,17 @@ bool SearchUp(std::string new_up){
   return found;
 }
 
-void WriteLog(bool is_tcp, const int port, const int bytes_in, const char *end_signal, const int end_signal_size, const int bytes_out, const char *msg, const int msg_size){
+void WriteLog(bool is_tcp, const int port, const char *client_ip, const int bytes_in, const char *end_signal, const int end_signal_size, const int bytes_out, const char *msg, const int msg_size){
+  static flag = true;
   std::string file_name = is_tcp ? "logs/TCP_" : "logs/UDP_" + std::to_string(port);
 
   std::ofstream write_stream;
   write_stream.open(file_name);
-  write_stream << bytes_in << "," << end_signal << "," << bytes_out << "," << msg << "\n";
+  if(flag){
+    write_stream << "ip,port,bytes_in,end_signal,bytes_out,msg";
+    flag = false;
+  }
+  write_stream << client_ip << "," << bytes_in << "," << end_signal << "," << bytes_out << "," << msg << "\n";
   write_stream.close();
 
 }
@@ -217,6 +222,9 @@ int main(int argc, char **argv){
     socklen_t client_sockaddr_len = 0;
     memset(&client_sockaddr, 0, sizeof(client_sockaddr));
 
+    char client_ip [INET_ADDRSTRLEN];
+
+
     int in_buffer_size = 4094;
     char in_buffer[in_buffer_size];
     memset(in_buffer, 0, in_buffer_size);
@@ -227,6 +235,11 @@ int main(int argc, char **argv){
         conn_fd = CreateConnection(socket_fd, &client_sockaddr, &client_sockaddr_len);
       }
       loop = !RecvMessage(conn_fd, in_buffer, in_buffer_size, bytes_in, end_signal, strlen(end_signal), &client_sockaddr, &client_sockaddr_len);
+
+      inet_ntop(AF_INET, &(client_sockaddr.sin_addr), client_ip, INET_ADDRSTRLEN);
+      
+      WriteLog(is_tcp, port, client_ip, bytes_in, end_signal, strlen(end_signal), bytes_out, in_buffer, in_buffer_size);
+
       if(loop){
         if(is_tcp){
           close(conn_fd);
@@ -235,7 +248,6 @@ int main(int argc, char **argv){
       }
     }
 
-    WriteLog(is_tcp, port, bytes_in, end_signal, strlen(end_signal), bytes_out, in_buffer, in_buffer_size);
 
     SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
 
