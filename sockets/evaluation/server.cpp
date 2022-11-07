@@ -120,7 +120,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
       std::cout << "Check if end by end_signal\n";
 
       std::string msg;
-      msg.assign(in_buffer, buffer_size);
+      msg.assign(in_buffer, total_bytes_in);
       if(msg.find(end_signal, 0) != std::string::npos){
         return true;
       }
