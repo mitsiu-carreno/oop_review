@@ -124,11 +124,13 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
       int last_meaningful_byte = current_bytes_in;
       for(; last_meaningful_byte > end_signal_size; --last_meaningful_byte){
         if(strncmp(&in_buffer[last_meaningful_byte], "\0", 1) != 0){
+          std::cout << "Must break;";
           break;
         }
       }
       std::cout << "Last_meaningful byte: " << last_meaningful_byte << " with char " << in_buffer[last_meaningful_byte] << "\n";
       if(strncmp(&in_buffer[last_meaningful_byte - end_signal_size], end_signal, end_signal_size) == 0){
+        std::cout << "Must break;";
         break;
       }
     }
