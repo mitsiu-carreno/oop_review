@@ -86,7 +86,7 @@ int CreateConnection(int socket_fd, struct sockaddr_in *client_sockaddr, socklen
   return accept_result;
 }
 
-bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, const int param_bytes_in, const char *end_signal, const int end_signal_size, struct sockaddr_in *client_sockaddr, socklen_t *client_sockaddr_len){
+bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, const int param_bytes_in, const char *end_signal, const int end_signal_size, struct sockaddr_in *client_sockaddr, socklen_t *client_sockaddr_len, std::string &up){
   std::cout << "Ready to receive\n";
 
   int total_bytes_in = param_bytes_in != 0 ? param_bytes_in : buffer_size -1;
@@ -109,6 +109,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
       std::cout << "Client ip: " << client_addr << "\n";
 
       std::cout << "Last message bytes: " << bytes_in << " total message bytes: " << current_bytes_in << "\n";
+      std::cout << ""
     if(param_bytes_in > 0){
       // END BY MSG WIDTH
       std::cout << "Check if end by msg width " << current_bytes_in << " vs " << total_bytes_in << "\n";
@@ -146,7 +147,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
   std::cout << "Checked done, msg: " << in_buffer << "\n";
   if(current_bytes_in >= up_len){
     // CHECK UP 
-    std::string up;
+    //std::string up;
     up.assign(in_buffer, up_len);
     return SearchUp(up);
   }
@@ -245,7 +246,7 @@ int main(int argc, char **argv){
     memset(&client_sockaddr, 0, sizeof(client_sockaddr));
 
     char client_ip [INET_ADDRSTRLEN];
-
+    std::string up;
 
     int in_buffer_size = 4094;
     char in_buffer[in_buffer_size];
@@ -256,7 +257,7 @@ int main(int argc, char **argv){
       if(is_tcp){
         conn_fd = CreateConnection(socket_fd, &client_sockaddr, &client_sockaddr_len);
       }
-      loop = !RecvMessage(conn_fd, in_buffer, in_buffer_size, bytes_in, end_signal, strlen(end_signal), &client_sockaddr, &client_sockaddr_len);
+      loop = !RecvMessage(conn_fd, in_buffer, in_buffer_size, bytes_in, end_signal, strlen(end_signal), &client_sockaddr, &client_sockaddr_len, up);
 
       inet_ntop(AF_INET, &(client_sockaddr.sin_addr), client_ip, INET_ADDRSTRLEN);
       
@@ -268,8 +269,7 @@ int main(int argc, char **argv){
         std::cout<< "Up not found try again\n";
       }
     }
-    std::string up;
-    up.assign(in_buffer, up_len);
+    //up.assign(in_buffer, up_len);
 
     WriteLog(up, is_tcp, port, client_ip, bytes_in, end_signal, in_buffer);
     //SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
