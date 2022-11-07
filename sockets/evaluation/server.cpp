@@ -203,7 +203,7 @@ int main(int argc, char **argv){
         throw ErrorLog {"End signal is too long", -1};
       }
       strcpy(end_signal, argv[4]);
-      std::cout << "-"<<end_signal<<"-" strlen(end_signal);
+      std::cout << "-"<<end_signal<<"-"<< strlen(end_signal) << "\n:";
       if(end_signal[0] == '0'){
         throw ErrorLog {"No bytes_in nor end_signal", -1};
       }
