@@ -1,4 +1,6 @@
 gnome-terminal -e '/bin/bash -c "./server TCP 4000 0 ok 70; exec bash"'
+g++ -std=c++11 -o server server.cpp
+
 
 POSTGRESQL
 
