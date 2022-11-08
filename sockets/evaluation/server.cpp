@@ -216,7 +216,7 @@ int main(int argc, char **argv){
         throw ErrorLog {"End signal is too long", -1};
       }
       strcpy(end_signal, argv[4]);
-      std::cout << "-"<<end_signal<<"-"<< strlen(end_signal) << "\n:";
+      std::cout << "-"<<end_signal<<"-"<< strlen(end_signal) << "\n";
       if(end_signal[0] == '0'){
         throw ErrorLog {"No bytes_in nor end_signal", -1};
       }
@@ -274,7 +274,7 @@ int main(int argc, char **argv){
     //up.assign(in_buffer, up_len);
 
     WriteLog(up, is_tcp, port, client_ip, bytes_in, end_signal, in_buffer);
-    //SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
+    SendMessage(conn_fd, bytes_out, &client_sockaddr, client_sockaddr_len);
 
     if(is_tcp){
       close(conn_fd);
