@@ -120,6 +120,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
       // END BY end_signal
       std::cout << "Check if end by end_signal" << "\"" << end_signal <<"\"\n";
 
+      /*
       std::string msg;
       msg.assign(in_buffer, total_bytes_in);
       if(msg.find(end_signal, msg.length() - end_signal_size - 2) != std::string::npos){
@@ -129,7 +130,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
       }
       std::cout << "End signal not found\n";
       return false;
-      /*
+      */
       int last_meaningful_byte = current_bytes_in;
       for(; last_meaningful_byte > end_signal_size; --last_meaningful_byte){
         if(strncmp(&in_buffer[last_meaningful_byte], "\0", 1) != 0){
@@ -137,12 +138,12 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
           break;
         }
       }
-      std::cout << "Last_meaningful byte: " << last_meaningful_byte << " with char " << in_buffer[last_meaningful_byte - end_signal_size] << in_buffer[last_meaningful_byte]<< "\n";
+      std::cout << "Last_meaningful byte: " << last_meaningful_byte << " with char " << in_buffer[last_meaningful_byte - end_signal_size -1] << in_buffer[last_meaningful_byte]<< "\n";
       if(strncmp(&in_buffer[last_meaningful_byte - end_signal_size -1], end_signal, end_signal_size) == 0){
         std::cout << "Must break;";
         break;
       }
-      */
+      return false;
     }
   }
 
