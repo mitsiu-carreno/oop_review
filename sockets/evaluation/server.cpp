@@ -118,7 +118,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
       }
     }else{
       // END BY end_signal
-      std::cout << "Check if end by end_signal" << "\"" << end_signal <<"\"\n";
+      std::cout << "Check if end by end_signal \"" << end_signal <<"\" width: " << end_signal_size << "\n";
 
       /*
       std::string msg;
@@ -138,8 +138,8 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
           break;
         }
       }
-      std::cout << "Last_meaningful byte: " << last_meaningful_byte << " with char " << in_buffer[last_meaningful_byte - end_signal_size -1] << in_buffer[last_meaningful_byte]<< "\n";
-      if(strncmp(&in_buffer[last_meaningful_byte - end_signal_size -1], end_signal, end_signal_size) == 0){
+      std::cout << "Last_meaningful byte: " << last_meaningful_byte << " with char " << in_buffer[last_meaningful_byte - end_signal_size + 1] << in_buffer[last_meaningful_byte]<< "\n";
+      if(strncmp(&in_buffer[last_meaningful_byte - end_signal_size + 1], end_signal, end_signal_size) == 0){
         std::cout << "Must break;";
         break;
       }
