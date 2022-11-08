@@ -122,7 +122,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
 
       std::string msg;
       msg.assign(in_buffer, total_bytes_in);
-      if(msg.find(end_signal) != std::string::npos){
+      if(msg.find(end_signal, msg.length() - end_signal_size - 2) != std::string::npos){
         //return true;
         std::cout << "Found at pos " << msg.find(end_signal); 
         break;
@@ -160,7 +160,7 @@ bool RecvMessage(const int conn_fd, char *in_buffer, const int buffer_size, cons
 
 void SendMessage(const int conn_fd, const int param_bytes_out, sockaddr_in *client_sockaddr, socklen_t client_sockaddr_len){
   std::cout << "Ready to send message\n";
-  std::cout << client_sockaddr_len << "\n";
+  //std::cout << client_sockaddr_len << "\n";
   char out_buffer[param_bytes_out];
   memset(out_buffer, 0, param_bytes_out);
   strncpy(out_buffer, "Felicidades has aprobado la evaluación\0", strlen("Felicidades has aprobado la evaluación\0"));
