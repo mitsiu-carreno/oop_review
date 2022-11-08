@@ -244,7 +244,7 @@ int main(int argc, char **argv){
     int conn_fd = socket_fd;
 
     struct sockaddr_in client_sockaddr;
-    socklen_t client_sockaddr_len = 0;
+    socklen_t client_sockaddr_len = sizeof(struct sockaddr_in);
     memset(&client_sockaddr, 0, sizeof(client_sockaddr));
 
     char client_ip [INET_ADDRSTRLEN];
