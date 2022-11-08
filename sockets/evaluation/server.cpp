@@ -38,7 +38,7 @@ void WriteLog(std::string up, bool is_tcp, const int port, const char *client_ip
   std::string file_name = folder + up + proto + std::to_string(port);
 
   std::ofstream write_stream;
-  write_stream.open(file_name);
+  write_stream.open(file_name, std::ofstream::app);
   write_stream << client_ip << "," << bytes_in << "," << end_signal << "," << msg << "\n";
   write_stream.close();
 
